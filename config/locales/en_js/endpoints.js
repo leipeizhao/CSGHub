@@ -30,7 +30,9 @@ export const endpoints = {
     privateDesc: "Only you (personal) or members of your organization can see this endpoint.",
     createEndpoint: "Create",
     createSuccess: "Endpoint created successfully",
-    dedicated: "Dedicated endpoint"
+    dedicated: "Dedicated endpoint",
+    tip: "Applied to the endpoint, cannot be changed after creation",
+    createFail: "Failed to create endpoint",
   },
   settings: {
     stop: "Stop",
@@ -69,7 +71,8 @@ export const endpoints = {
     json: "JSON Output",
     maximum: "Maximum",
     send: "Send",
-    test: "Test your endpoint",
+    test: "Inference API",
     api: "Send requests to endpoint",
+    useToken: 'Use my token'
   }
 }

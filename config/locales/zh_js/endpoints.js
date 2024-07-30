@@ -29,8 +29,10 @@ export const endpoints = {
     private: "私有",
     privateDesc: "只有你（个人）或你所在组织的成员可以访问这个实例。",
     createEndpoint: "新建实例",
-    createSuccess: "实例创建成功",
-    dedicated: "专属实例"
+    dedicated: "专属实例",
+    tip: "应用于专属实例，创建后不可更改",
+    createSuccess: "专属实例创建成功",
+    createFail: "专属实例创建失败",
   },
   settings: {
     stop: "暂停",
@@ -70,7 +72,8 @@ export const endpoints = {
     json: "JSON 输出",
     maximum: "最大化",
     send: "发送",
-    test: "专属实例测试",
+    test: "推理 API",
     api: "发送请求到专属实例",
+    useToken: '使用我的 token'
   }
 }

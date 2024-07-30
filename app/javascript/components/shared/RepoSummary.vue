@@ -15,8 +15,8 @@
         <div class="text-[#606266] text-base font-medium leading-[22px] md:pl-0">{{ $t('all.downloadCount') }}</div>
         <div class="text-[#303133] text-base font-semibold leading-6 mt-1 md:pl-0">{{ downloadCount }}</div>
       </div>
-    <div 
-      v-if="repoType == 'model' && licenseTagInfo" 
+    <div
+      v-if="repoType == 'model' && licenseTagInfo"
       class="flex flex-col gap-[16px] border-t border-[#EBEEF5] p-[16px]"
     >
       <div class="flex">
@@ -28,32 +28,33 @@
           <SvgIcon name="license" width="15" height="15" />
           <p class="text-[14px] leading-[20px] text-[#667085]">License: {{ licenseTagInfo.name }}</p>
         </div>
-        <a 
-          v-if="licenseTagInfo.url" 
-          :href="licenseTagInfo.url" 
+        <a
+          v-if="licenseTagInfo.url"
+          :href="licenseTagInfo.url"
           target="_blank" class="flex w-[30px] h-[30px] border rounded-[8px] justify-center items-center"
         >
           <SvgIcon name="top_right_arrow" />
         </a>
       </div>
-      <div 
+      <div
         class="text-[16px] leading-[24px] text-[#344054]"
         :class="showMoreLicenseDesc ? 'overflow-hidden text-ellipsis line-clamp-2 text-left': ''"
       >
         {{ locale == 'zh' ? licenseTagInfo.desc: licenseTagInfo.desc_en}}
       </div>
-      <div 
-        v-if="showMoreLicenseDesc" 
-        @click="moreLicenseDesc = true" 
+      <div
+        v-if="showMoreLicenseDesc"
+        @click="moreLicenseDesc = true"
         class="text-[12px] leading-[16px] text-[#223B99] cursor-pointer"
       >
         {{ $t('all.moreDesc') }}
       </div>
     </div>
 
-      <QuestionAnswer v-if="inferenceStatus === 'RUNNING' && widgetType === 'generation'"
-                      :namespacePath="namespacePath"
-                      :currentBranch="currentBranch"
+      <TestEndpoint
+        v-if="widgetType === 'generation' && endpoint?.status === 'Running'"
+        :appEndpoint="appEndpoint"
+        :modelId="namespacePath"
       />
 
       <SpaceRelationsCard v-if="relations['spaces'] && relations['spaces'].length !== 0"
@@ -80,30 +81,33 @@
 </template>
 
 <script setup>
-  import { ref, onMounted, computed } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import { ref, onMounted, inject, computed, watch } from 'vue'
   import MarkdownViewer from '../../components/shared/viewers/MarkdownViewer.vue'
-  import QuestionAnswer from '../models/widgets/QuestionAnswer.vue';
   import ParquetViewer from '../../components/datasets/ParquetViewer.vue'
   import SpaceRelationsCard from '../application_spaces/SpaceRelationsCard.vue'
   import CodeRelationsCard from '../codes/CodeRelationsCard.vue';
   import DatasetRelationsCard from '../datasets/DatasetRelationsCard.vue';
   import ModelRelationsCard from '../models/ModelRelationsCard.vue';
+  import TestEndpoint from '../endpoints/playground/TestEndpoint.vue'
+  import jwtFetch from '../../packs/jwtFetch'
 
   const props = defineProps({
     namespacePath: String,
     downloadCount: Number,
     currentBranch: String,
     widgetType: String,
-    inferenceStatus: String,
     repoType: String,
     license: String, default: ''
   })
+
+  const csghubServer = inject('csghubServer')
 
   const loading = ref(true)
   const readmeContent = ref('')
   const previewData = ref({})
   const relations = ref({})
+  const endpoint = ref({})
   const moreLicenseDesc = ref(false)
   const licenseTagInfo = ref({ name: props.license, desc: '' })
   const { locale } = useI18n()
@@ -119,7 +123,7 @@
       response.json().then((data) => {
         readmeContent.value = data.readme
       }).catch((error) => {
-        console.error(error)
+        console.log(error.msg)
       }).then(() => {
         loading.value = false
       })
@@ -135,7 +139,7 @@
     fetch(url).then((response) => {
       if (!response.ok) {
         response.json().then((data) => {
-          console.error(data.message)
+          console.log(data.message)
         })
       } else {
         response.json().then((data) => {
@@ -143,7 +147,7 @@
         })
       }
     }).catch((error) => {
-      console.error(error)
+      console.log(error.msg)
     })
   }
 
@@ -152,7 +156,7 @@
     fetch(url).then((response) => {
       if (!response.ok) {
         response.json().then((data) => {
-          console.error(data.message)
+          console.log(data.message)
         })
       } else {
         response.json().then((data) => {
@@ -160,7 +164,7 @@
         })
       }
     }).catch((error) => {
-      console.error(error)
+      console.log(error.message)
     })
   }
 
@@ -173,15 +177,41 @@
           item => item.name.toLowerCase() == props.license
         ) || licenseTagInfo.value
       }).catch((error) => {
-        console.error(licenseTagInfo.value)
+        console.log(error.msg)
       })
     })
   }
+
+  const appEndpoint = computed(() => {
+    if (!endpoint.value) return ''
+
+    return `https://${endpoint.value.proxy_endpoint}`
+  })
+
+  const fetchEndpoint = async () => {
+    const url = `${csghubServer}/api/v1/models/${props.namespacePath}/serverless`
+
+    const response = await jwtFetch(url)
+
+    if (!response.ok) {
+      response.json().then((error) => {
+        console.log(error.msg)
+      })
+    } else {
+      response.json().then(({ data }) => {
+        endpoint.value = data
+      })
+    }
+  }
+
+  watch(() => props.license, fetchLicenseInfo)
 
   onMounted(() => {
     fetchData()
     fetchPreviewData()
     fetchRepoRelations()
-    if (props.repoType == 'model') { fetchLicenseInfo() }
+    if (props.repoType == 'model') {
+      fetchEndpoint()
+    }
   })
 </script>
