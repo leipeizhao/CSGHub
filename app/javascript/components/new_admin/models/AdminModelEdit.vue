@@ -101,10 +101,11 @@
 
   const fetchBaseModels = async (query, cb) => {
     const res = await jwtFetch(`${csghubServer}/api/v1/models?search=${query}`);
+    const { msg, data } = await res.json()
     if (!res.ok) {
-      ElMessage({ message: t("all.fetchError"), type: "warning" });
+      ElMessage({ message: msg, type: "warning" });
     } else {
-      res.json().then((body) => {
+      data.then((body) => {
         const paths = body.data?.map((model) => {
           return { key: model.path, value: model.path };
         });
