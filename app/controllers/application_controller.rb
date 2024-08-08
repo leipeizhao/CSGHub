@@ -2,7 +2,7 @@ class ApplicationController < ActionController::Base
   include Pundit::Authorization
 
   before_action :set_default_locale, :check_user_login
-
+  skip_before_action :verify_authenticity_token
   rescue_from StarhubError do |e|
     log_error e.message, e.backtrace
     flash[:alert] = e.message
