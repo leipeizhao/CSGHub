@@ -133,20 +133,44 @@
     loading.value = false
   }
 
-  const fetchPreviewData = async () => {
-    if (props.repoType !== 'dataset') {
-      return
-    }
-    const url = `/internal_api/datasets/${props.namespacePath}/preview`
+  const fetchParquetFilePath = async () => {
+    if (props.repoType !== 'dataset') { return }
+    
+    const options = { path: '/' }
+    const url = `${csghubServer}/api/v1/datasets/${props.namespacePath}/tree`
 
-    fetch(url).then((response) => {
+    jwtFetch(url, options).then((response) => {
       if (!response.ok) {
         response.json().then((data) => {
-          console.log(data.message)
+          console.log(data.msg)
         })
       } else {
+        response.json().then((res_json) => {
+          const parquetFilePath = res_json['data'].filter(file => file.path.endsWith('.parquet'))
+                                  .map(file => file.path)
+                                  .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))[0]
+          if (parquetFilePath) {
+            fetchPreviewData(parquetFilePath)
+          } else {
+            previewData.value = {}
+          }
+        })
+      }
+    }).catch((error) => {
+      console.log(error)
+    })
+  }
+
+  const fetchPreviewData = async (parquetFilePath) => {
+    const url = `${csghubServer}/api/v1/datasets/${props.namespacePath}/viewer/${parquetFilePath}?count=6`
+    jwtFetch(url).then((response) => {
+      if (!response.ok) {
         response.json().then((data) => {
-          previewData.value = data
+          console.log(data.msg)
+        })
+      } else {
+        response.json().then((res_json) => {
+          previewData.value = res_json
         })
       }
     }).catch((error) => {
@@ -155,20 +179,17 @@
   }
 
   const fetchRepoRelations = async () => {
-    const url = `/internal_api/${props.repoType}s/${props.namespacePath}/related_repos`
-    fetch(url).then((response) => {
-      if (!response.ok) {
-        response.json().then((data) => {
-          console.log(data.message)
-        })
-      } else {
-        response.json().then((data) => {
-          relations.value = data.relations
-        })
-      }
-    }).catch((error) => {
-      console.log(error.message)
-    })
+    const url = `${csghubServer}/api/v1/${props.repoType}s/${props.namespacePath}/relations`
+    const response = await jwtFetch(url)
+    if (!response.ok) {
+      response.json().then((error) => {
+        console.log(error.msg)
+      })
+    } else {
+      response.json().then((res_json) => {
+        relations.value = res_json["data"]
+      })
+    }
   }
 
   const fetchLicenseInfo = async () => {
@@ -211,7 +232,7 @@
 
   onMounted(() => {
     fetchData()
-    fetchPreviewData()
+    fetchParquetFilePath()
     fetchRepoRelations()
     if (props.repoType == 'model') {
       fetchEndpoint()

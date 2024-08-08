@@ -1,5 +1,12 @@
 <template>
   <div class="flex flex-col gap-[24px] px-6 py-10 border-l">
+    <el-alert
+      v-if="canChangeUsername === 'true'"
+      :title="$t('profile.edit.renameUsername')"
+      center
+      show-icon
+      type="warning">
+    </el-alert>
     <div class="font-semibold text-[20px] leading-[28px]">
       {{ $t('profile.edit.title') }}
     </div>
@@ -11,7 +18,7 @@
       <el-input
         class="max-w-[600px]"
         v-model="profileData.username"
-        disabled
+        :disabled="canChangeUsername === 'false'"
         :placeholder="this.$t('all.userName')">
       </el-input>
       <p class="text-gray-500 text-[12px] italic pt-1">
@@ -123,7 +130,7 @@
       </el-input>
     </div>
     <div
-      @click="updateProfile"
+      @click="confirmUpdateProfile"
       class="w-[111px] text-[14px] border border-[#DCDFE6] px-[16px] py-[5px] leading-[22px] text-center rounded-[8px] text-white cursor-pointer bg-[#409EFF]">
       {{ $t('all.save') }}
     </div>
@@ -133,18 +140,22 @@
 <script setup>
   import csrfFetch from '../../packs/csrfFetch.js'
   import jwtFetch from '../../packs/jwtFetch.js'
-  import { ElMessage } from 'element-plus'
+  import { ElMessage, ElMessageBox } from 'element-plus'
   import { ref, inject } from 'vue'
   import useUserStore from '../../stores/UserStore.js'
   import { storeToRefs } from 'pinia'
   import { useI18n } from 'vue-i18n'
+  import { useCookies } from 'vue3-cookies'
+  import { isBlank } from '../../packs/utils'
 
+  const { cookies } = useCookies()
   const { t } = useI18n()
   const userStore = useUserStore()
   const csghubServer = inject('csghubServer')
   const profileData = ref(storeToRefs(userStore))
 
   const fileInput = ref(null)
+  const canChangeUsername = cookies.get('can_change_username')
 
   const uploadImage = () => {
     fileInput.value.click()
@@ -172,17 +183,52 @@
     }
   }
 
-  const updateProfile = async () => {
-    const profileUpdateEndpoint = `${csghubServer}/api/v1/user/${profileData.value.username}`
-    const params = {
+  const confirmUpdateProfile = () => {
+    if (canChangeUsername === 'true') {
+      ElMessageBox.confirm(
+        t('profile.edit.confirmUpdateMessage'),
+        t('profile.edit.confirmUpdateTitle'),
+        {
+          confirmButtonText: t('profile.edit.confirmUpdate'),
+          cancelButtonText: t('profile.edit.cancelUpdate'),
+          type: 'warning',
+        }
+      ).then(() => {
+        saveProfile({relogin: true})
+      }).catch(() => {
+        ElMessage({
+          type: 'info',
+          message: t('profile.edit.updateCancelled'),
+        })
+      })
+    } else {
+      saveProfile()
+    }
+  }
+
+  const updateProfile = async (config={}) => {
+    const currentUsername = cookies.get('current_user')
+    const profileUpdateEndpoint = `${csghubServer}/api/v1/user/${currentUsername}`
+    let params = {
       avatar: profileData.value.avatar,
       username: profileData.value.username,
       name: profileData.value.nickname,
-      email: profileData.value.email.trim(),
+      email: (profileData.value.email || "").trim(),
       phone: profileData.value.phone,
       homepage: profileData.value.homepage,
       bio: profileData.value.bio
     }
+
+    if (canChangeUsername === 'true') {
+      params['new_username'] = profileData.value.username
+    }
+
+    Object.keys(params).forEach(key => {
+      if (params[key] === '' || params[key] === undefined) {
+        delete params[key]
+      }
+    })
+
     const options = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -192,19 +238,28 @@
       const response = await jwtFetch(profileUpdateEndpoint, options)
       if (!response.ok) {
         response.json().then((data) => {
-          ElMessage({
-            message: data.message,
-            type: 'warning'
-          })
+          ElMessage.warning(data.msg)
         })
       } else {
-        ElMessage({
-          message: t('profile.edit.updateSuccess'),
-          type: 'success'
-        })
+        ElMessage.success(t('profile.edit.updateSuccess'))
+        if (config.relogin) {
+          window.location.href = '/logout'
+        }
       }
     } catch (error) {
       console.error(error)
     }
+  }
+
+  const saveProfile = (config={}) => {
+    if (isBlank(profileData.value.username)) {
+      ElMessage.warning("Please provide username")
+      return
+    }
+    if (isBlank(profileData.value.email)) {
+      ElMessage.warning("Please provide email")
+      return
+    }
+    updateProfile(config)
   }
 </script>

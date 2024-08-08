@@ -1,5 +1,5 @@
 <template>
-  <div class="sm:w-[100%] sm:mt-[36px] pt-4">
+  <div class="sm:w-[100%] sm:mt-[36px] pt-4 pb-8 px-2">
     <!-- models -->
     <div>
       <h3 class="text-[20px] text-[#303133] flex items-center gap-[8px]">
@@ -138,6 +138,7 @@
 
   onMounted(() => {
     props.repositories.forEach((item) => {
+      item.downloads = item.download_count
       switch (item.repository_type) {
         case 'model':
           models.value.push(item)

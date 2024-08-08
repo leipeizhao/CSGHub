@@ -93,11 +93,25 @@
   const codeContent = ref('')
   const useToken = ref(false)
   const accessToken = ref('')
-  const endpointUrl = ref('')
 
   const changeLanguage = (ext) => {
     codeExtension.value = ext
   }
+
+  const pythonHeaders = `
+headers = {
+    'Content-Type': 'application/json'
+}`
+
+  const pythonHeadersWithToken = computed(
+    () => `
+auth_token = "${accessToken.value}"
+
+headers = {
+    'Authorization': f'Bearer {auth_token}',
+    'Content-Type': 'application/json'
+}`
+  )
 
   const pythonContent = computed(
     () => `import requests
@@ -105,6 +119,7 @@ import json
 import re
 
 url = "${endpointUrl.value}"
+${useToken.value ? pythonHeadersWithToken.value : pythonHeaders}
 
 data = {
     "model": "${props.modelId}",
@@ -126,7 +141,7 @@ data = {
     "repetition_penalty": ${props.form.repetition_penalty}
 }
 
-response = requests.post(url=url, json=data, stream=True)
+response = requests.post(url=url, json=data, headers=headers, stream=True)
 response.raise_for_status()
 
 if response.status_code == 200:
@@ -142,13 +157,25 @@ if response.status_code == 200:
 `
   )
 
+  const jsHeaders = `
+  headers: {
+    "Content-Type": "application/json"
+  },
+`
+
+  const jsHeadersWithToken = computed(
+    () => `
+  headers: {
+    "Authorization": "Bearer ${accessToken.value}",
+    "Content-Type": "application/json"
+  },`
+  )
+
   const jsContent = computed(
     () =>
       `fetch("${endpointUrl.value}", {
   method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
+  ${useToken.value ? jsHeadersWithToken.value : jsHeaders}
   body: JSON.stringify({
     model: "${props.modelId}",
     messages: [
@@ -175,10 +202,17 @@ if response.status_code == 200:
 })`
   )
 
+  const curlHeaders = `-H "Content-Type: application/json" \\`
+
+  const curlHeadersWithToken = computed(
+    () => `-H "Content-Type: application/json" \\
+-H "Authorization: Bearer ${accessToken.value}" \\`
+  )
+
   const curlContent = computed(
     () => `curl -X POST \\
 "${endpointUrl.value}" \\
--H "Content-Type: application/json" \\
+${useToken.value ? curlHeadersWithToken.value : curlHeaders}
 -d '{ \\
   "model": "${props.modelId}", \\
   "messages": [ \\
@@ -212,17 +246,20 @@ if response.status_code == 200:
     }
   }
 
-  const setEndpointUrl = () => {
-    if (useToken.value) {
-      endpointUrl.value = `${props.appEndpoint}/v1/chat/completions?jwt=${accessToken.value}`
-    } else {
-      endpointUrl.value = `${props.appEndpoint}/v1/chat/completions`
-    }
-  }
-
   const copyCode = () => {
     copyToClipboard(codeContent.value)
   }
+
+  const endpointUrl = computed(
+    () => `${props.appEndpoint}/api/v1/chat/completions`
+  )
+
+  watch(
+    () => props.appEndpoint,
+    () => {
+      setCodeContent()
+    }
+  )
 
   watch(
     () => codeExtension.value,
@@ -242,7 +279,6 @@ if response.status_code == 200:
   watch(
     () => useToken.value,
     () => {
-      setEndpointUrl()
       setCodeContent()
     }
   )
@@ -267,7 +303,6 @@ if response.status_code == 200:
   }
 
   onMounted(() => {
-    setEndpointUrl()
     setCodeContent()
     fetchUserToken()
   })

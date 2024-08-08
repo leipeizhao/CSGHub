@@ -111,7 +111,7 @@
           </svg>
         </span>
       </div>
-      <a href="#" class="text-[#606266] w-[37%] pl-3 text-sm truncate hover:underline">
+      <a :href="`/${prefixPath}/${namespacePath}/commit/${file.last_commit_sha}`" class="text-[#606266] w-[37%] pl-3 text-sm truncate hover:underline">
         {{ file.commit.message }}
       </a>
       <div class="text-[#909399] w-[15%] text-sm text-right cursor-pointer md:hidden">
@@ -156,7 +156,7 @@
 
   const breadcrumb = ref([])
   const files = ref([])
-  const lastCommit = ref({})
+  const lastCommit = ref()
   const lastCommitAvatar = ref('https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png')
   const prefixPath = document.location.pathname.split('/')[1]
 
@@ -209,15 +209,37 @@
     return file.lfs || (file.size <= 10 * 1024 * 1024)
   }
 
-  const downloadFile = async (file) => {
+  const lfsFileDownload = async (file) => {
+    const url = `${csghubServer}/api/v1/${prefixPath}/${props.namespacePath}/download/${file.lfs_relative_path}?ref=${props.currentBranch}&lfs=true&lfs_path=${file.lfs_relative_path}&save_as=${file.path}`
+
+    try {
+      const response = await jwtFetch(url, { method: 'GET' })
+
+      if (!response.ok) {
+        const error = await response.json()
+        ElMessage({
+          message: error.msg,
+          type: 'warning'
+        })
+      } else {
+        const { data: downloadUrl } = await response.json()
+        createAndClickAnchor(downloadUrl, file.path)
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const normalFileDownload = async (file) => {
     const url = `${csghubServer}/api/v1/${prefixPath}/${props.namespacePath}/download/${file.path}?ref=${props.currentBranch}`
 
     try {
       const response = await jwtFetch(url, { method: 'GET' })
 
       if (!response.ok) {
+        const error = await response.json()
         ElMessage({
-          message: t('all.fetchError'),
+          message: error.msg,
           type: 'warning'
         })
       } else {
@@ -227,6 +249,14 @@
       }
     } catch (error) {
       console.error(error)
+    }
+  }
+
+  const downloadFile = (file) => {
+    if (file.lfs) {
+      lfsFileDownload(file)
+    } else {
+      normalFileDownload(file)
     }
   }
 

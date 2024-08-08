@@ -42,7 +42,9 @@
       :path="`${namespace}/${repoName}`"
     />
   </div>
-  <div v-if="applicationSpace.can_write">
+
+  <!-- logs drawer -->
+  <div v-show="applicationSpace.can_write">
     <el-drawer
       v-model="spaceLogsDrawer"
       direction="btt"
@@ -102,6 +104,7 @@
   import useRepoDetailStore from '../../stores/RepoDetailStore'
   import jwtFetch from '../../packs/jwtFetch.js'
   import { buildTags } from '../../packs/buildTags'
+  import { ElMessage } from 'element-plus'
 
   const props = defineProps({
     repoType: String,
@@ -117,7 +120,6 @@
     avatar: String,
     settingsVisibility: Boolean,
     tags: Object,
-    ownerUrl: String,
     canWrite: Boolean,
     userName: String,
     commitId: String,
@@ -134,7 +136,7 @@
   const applicationSpace = ref({})
   const { t } = useI18n();
   const { cookies } = useCookies();
-  const appStatus = ref(applicationSpace.value.status)
+  const appStatus = ref('')
   const appEndpoint = computed(() => {
     if(ENABLE_HTTPS === 'true') {
       return `https://${applicationSpace.value.endpoint}`
@@ -151,6 +153,8 @@
     industry_tags: [],
     other_tags: []
   })
+
+  const ownerUrl = ref('')
 
   const spaceLogsDrawer = ref(false)
   const buildLogDiv = ref(null)
@@ -186,6 +190,15 @@
       spaceLogsDrawer.value = false
     } else {
       spaceLogsDrawer.value = true
+      syncSpaceLogs()
+    }
+  }
+
+  const getOwnerUrl = (repo) => {
+    if (repo.user.username === props.namespace) {
+      return `/profile/${props.namespace}`
+    } else {
+      return `/organizations/${props.namespace}`
     }
   }
 
@@ -198,13 +211,15 @@
 
       if (response.ok) {
         applicationSpace.value = json.data
+        appStatus.value = json.data.status
         tags.value = buildTags(json.data.tags)
         repoDetailStore.initialize(json.data)
+        ownerUrl.value = getOwnerUrl(json.data)
       } else {
         ElMessage({ message: json.msg, type: 'warning' })
       }
     } catch (error) {
-      console.error(error)
+      console.log(error)
     }
   }
 
@@ -297,11 +312,6 @@
           }
           appStatus.value = ev.data
         }
-
-        // 启动日志
-        if (isLogsSSEConnected.value === false && applicationSpace.value.can_write) {
-          syncSpaceLogs()
-        }
       },
       onerror(err) {
         console.log('Status Server Error:')
@@ -312,6 +322,7 @@
 
   onMounted(() => {
     fetchRepoDetail()
+
     console.log(`Space 初始状态：${appStatus.value}`)
     if (isStatusSSEConnected.value === false) {
       syncSpaceStatus()

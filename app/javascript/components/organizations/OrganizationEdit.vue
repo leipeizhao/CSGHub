@@ -110,10 +110,13 @@
   const logo_images = ref([])
 
   watch(props.organizationRaw, (newVal) => {
+    // set logo
     if (newVal.logo) {
       logo_images.value = [{ url: newVal.logo, name: newVal.logo }]
-      organization.value = newVal
     }
+    //set organization value 
+    organization.value = newVal
+    // after organization value set, format homepage
     if (newVal.homepage) {
       formatHomepage(newVal.homepage)
     }
@@ -216,7 +219,7 @@
           response.json()
             .then(res => {
               ElMessage({
-                message: res.message,
+                message: res.msg,
                 type: 'warning'
               });
             })

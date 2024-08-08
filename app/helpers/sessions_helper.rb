@@ -1,6 +1,5 @@
 module SessionsHelper
   def log_in user
-    session[:login_identity] = user.login_identity
     cookies[:login_identity] = user.login_identity
     cookies[:current_user] = user.name
     cookies[:admin_user] = 'true' if user.admin?
@@ -15,7 +14,7 @@ module SessionsHelper
   end
 
   def current_user
-    login_identity = session[:login_identity].presence
+    login_identity = cookies[:login_identity].presence
     @current_user ||= login_identity && User.find_by_login_identity(login_identity)
   end
 
@@ -33,12 +32,14 @@ module SessionsHelper
 
   def logout
     # unset current_user
-    session[:login_identity] = nil
-    cookies.delete :current_user
     cookies.delete :login_identity
+    cookies.delete :current_user
+    cookies.delete :admin_user
+
+    # unset user token
     cookies.delete :user_token
     cookies.delete :token_expire_at
-    cookies.delete :admin_user
+    cookies.delete :can_change_username
 
     # unset odic cookies
     cookies.delete :oidcUuid

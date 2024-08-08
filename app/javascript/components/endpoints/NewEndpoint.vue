@@ -159,7 +159,7 @@
           class="w-full"
           prop="framework_id">
           <el-select
-            v-model="dataForm.framework_id"
+            v-model="dataForm.endpoint_framework"
             :placeholder="
               t('all.pleaseSelect', { value: t('endpoints.new.framework') })
             "
@@ -174,31 +174,11 @@
         </el-form-item>
 
         <el-form-item class="w-full">
-          <el-radio-group
+          <PublicAndPrivateRadioGroup
             v-model="dataForm.visibility"
-            class="!block"
-            prop="visibility">
-            <el-radio
-              class="w-full !border-2 mr-0 mb-[32px] !rounded-xl !h-auto !items-start !p-4"
-              label="public"
-              size="large"
-              border>
-              {{ t('endpoints.new.public') }}
-              <p class="whitespace-normal text-[#475467] font-light">
-                {{ t('endpoints.new.publicDesc') }}
-              </p>
-            </el-radio>
-            <el-radio
-              class="w-full !border-2 mr-0 !rounded-xl !h-auto !items-start !p-4"
-              label="private"
-              size="large"
-              border>
-              {{ t('endpoints.new.private') }}
-              <p class="whitespace-normal text-[#475467] font-light">
-                {{ t('endpoints.new.privateDesc') }}
-              </p>
-            </el-radio>
-          </el-radio-group>
+            :publicDesc="t('endpoints.new.publicDesc')"
+            :privateDesc="t('endpoints.new.privateDesc')"
+          />
         </el-form-item>
 
         <div class="flex justify-end">
@@ -217,10 +197,11 @@
 </template>
 
 <script setup>
-  import { ref, onMounted, inject, computed } from 'vue'
+  import { ref, onMounted, inject } from 'vue'
   import { ElInput, ElMessage } from 'element-plus'
   import jwtFetch from '../../packs/jwtFetch'
   import { useI18n } from 'vue-i18n'
+  import PublicAndPrivateRadioGroup from '../shared/form/PublicAndPrivateRadioGroup.vue'
 
   const props = defineProps({
     namespace: String
@@ -236,7 +217,7 @@
     model_path: searchParams.get('model_id') || '',
     visibility: 'public',
     min_replica: 1,
-    max_replica: 5
+    max_replica: 1
   })
   const endpointFrameworks = ref([])
   const endpointClusters = ref([])
@@ -448,24 +429,6 @@
     @media screen and (max-width: 768px) {
       width: 100%;
     }
-  }
-
-  :deep(.el-radio__input) {
-    margin-top: 4px;
-  }
-
-  :deep(.el-radio__label) {
-    color: #344054 !important;
-    font-weight: 400;
-  }
-
-  :deep(.el-radio.is-bordered.is-checked) {
-    border: 2px solid #3250bd;
-  }
-
-  :deep(.el-radio__input.is-checked .el-radio__inner) {
-    background: #3250bd;
-    border-color: #3250bd;
   }
 
   :deep(.el-select) {

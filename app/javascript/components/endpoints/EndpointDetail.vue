@@ -65,7 +65,8 @@
   const currentUser = cookies.get('current_user')
 
   const canWrite = ref(currentUser === props.namespace)
-  const canManage = ref(currentUser === props.namespace)
+  // only owner can view endpoint detail, so just set true
+  const canManage = ref(true)
 
   const csghubServer = inject('csghubServer')
 
@@ -80,10 +81,12 @@
 
   watch(endpoint, (newVal) => {
     const endpointUrl = newVal.endpoint
-    if(ENABLE_HTTPS === 'true') {
-      appEndpoint.value = `https://${endpointUrl}`
-    } else {
-      appEndpoint.value = `http://${endpointUrl}`
+    if (endpointUrl) {
+      if(ENABLE_HTTPS === 'true') {
+        appEndpoint.value = `https://${endpointUrl}`
+      } else {
+        appEndpoint.value = `http://${endpointUrl}`
+      }
     }
   })
 
@@ -100,6 +103,7 @@
 
       if (response.ok) {
         endpoint.value = json.data
+        appStatus.value = json.data.status
         repoDetailStore.initialize(json.data)
       } else {
         ElMessage({ message: json.msg, type: 'warning' })
@@ -137,6 +141,9 @@
         console.log(`SyncStatus: ${eventResponse.status}`)
         console.log(`SyncStatus: ${eventResponse.details && eventResponse.details[0].name}`)
         if (appStatus.value !== eventResponse.status) {
+          if (eventResponse.status == 'Running') {
+            fetchRepoDetail()
+          }
           appStatus.value = eventResponse.status
         }
         if (eventResponse.details) {

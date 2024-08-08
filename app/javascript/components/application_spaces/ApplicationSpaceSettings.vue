@@ -66,7 +66,9 @@
             v-for="item in spaceResources"
             :key="item.name"
             :label="item.name"
-            :value="item.id" />
+            :value="item.id"
+            :disabled="!item.is_available"
+          />
         </el-select>
       </div>
     </div>
@@ -367,23 +369,6 @@
           { value: 'Public', label: this.$t('all.public') }
         ],
         spaceResources: [],
-        deployFailed: [
-          'BuildingFailed',
-          'DeployFailed',
-          'RuntimeError'
-        ].includes(this.appStatus),
-        initialized: [
-          'Building',
-          'Deploying',
-          'Startup',
-          'Running',
-          'Stopped',
-          'Sleeping',
-          'BuildingFailed',
-          'DeployFailed',
-          'RuntimeError'
-        ].includes(this.appStatus),
-        notInitialized: this.appStatus === 'NoAppFile',
         cookies: useCookies().cookies,
         csghubServer: inject('csghubServer'),
         images: [
@@ -417,6 +402,29 @@
       },
       isSpaceStopped() {
         return this.appStatus === 'Stopped' ? true : false
+      },
+      deployFailed() {
+        return [
+          'BuildingFailed',
+          'DeployFailed',
+          'RuntimeError'
+        ].includes(this.appStatus)
+      },
+      initialized() {
+        return [
+          'Building',
+          'Deploying',
+          'Startup',
+          'Running',
+          'Stopped',
+          'Sleeping',
+          'BuildingFailed',
+          'DeployFailed',
+          'RuntimeError'
+        ].includes(this.appStatus)
+      },
+      notInitialized() {
+        return this.appStatus === 'NoAppFile'
       }
     },
 
@@ -587,7 +595,7 @@
 
         if (!response.ok) {
           return response.json().then((err) => {
-            throw new Error(err.message)
+            ElMessage({ message: err.msg, type: 'warning' })
           })
         } else {
           ElMessage({ message: this.$t('all.delSuccess'), type: 'success' })

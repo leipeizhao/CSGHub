@@ -71,6 +71,7 @@
             :key="item.name"
             :label="item.name"
             :value="item.id"
+            :disabled="!item.is_available"
           />
         </el-select>
       </div>
@@ -452,7 +453,7 @@
   }
 
   const updateFramework = (value) => {
-    const payload = { framework_id: value }
+    const payload = { runtime_framework_id: value }
     updateEndpoint(payload)
   }
 
@@ -496,7 +497,7 @@
 
     if (!response.ok) {
       return response.json().then((data) => {
-        throw new Error(data.msg)
+        ElMessage({ message: data.msg, type: 'warning' })
       })
     } else {
       ElMessage({ message: t('all.delSuccess'), type: 'success' })
