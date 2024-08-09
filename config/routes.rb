@@ -2,19 +2,9 @@ Rails.application.routes.draw do
   # admin
   namespace :admin do
     resources :system_configs
-    resources :users do
-      get :export, on: :collection
-    end
-    resources :comments
-    resources :discussions
-    resources :system_api_keys
     resources :tags
-    resources :organizations
-    resources :error_logs
-    resources :models, except: [:new, :create]
-    resources :datasets, except: [:new, :create]
 
-    root to: "users#index"
+    root to: "system_configs#index"
   end
 
   # internal api
@@ -47,7 +37,6 @@ Rails.application.routes.draw do
     resources :users, only: [:index, :update] do
       collection do
         put 'jwt_token', to: 'users/jwt_token'
-        post 'verify_jwt_token', to: 'users/verify_jwt_token'
       end
     end
     get '/organizations/:namespace/models', to: 'organizations#models', namespace: /[^\/]+/
@@ -144,7 +133,7 @@ Rails.application.routes.draw do
     get '/endpoints/:namespace/(*model_name)/:endpoint_id/settings', to: 'endpoints#settings', namespace: /[^\/]+/
     get '/endpoints/:namespace/(*model_name)/:endpoint_id', to: 'endpoints#show', namespace: /[^\/]+/
 
-    get '/finetune/:namespace/:name/(*finetune_name)/:finetune_id/(*path)', to: 'finetune#show', namespace: /[^\/]+/
+    get '/finetune/:namespace/(*name)/(*finetune_name)/:finetune_id/(*path)', to: 'finetune#show', namespace: /[^\/]+/
 
     get '/collections/:collections_id/(*path)', to: 'collections#show', namespace: /[^\/]+/
 
