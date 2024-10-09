@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev_build": "vite build -w -m development",
+    "dev_build": "NODE_ENV=development vite build -w -m development",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -25,6 +25,7 @@
     "markdown-it-anchor": "^9.0.1",
     "parse-md": "^3.0.3",
     "pinia": "^2.2.2",
+    "terser": "^5.33.0",
     "timeago.js": "^4.0.2",
     "tippy.js": "^6.3.7",
     "tributejs": "^5.1.3",
